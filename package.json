@@ -48,6 +48,6 @@
   },
   "description": "A futuristic AI operating assistant with a cinematic HUD interface, Gemini-powered chat, memory, tasks, file tools, voice controls, and extension-ready APIs.",
   "engines": {
-    "node": "22.x"
+    "node": "20.x"
   }
 }

@@ -280,3 +280,46 @@ option {
   .core-orb { transform: scale(0.96); }
   .hud-panel { backdrop-filter: blur(16px); }
 }
+
+/* Stronger responsive dashboard layout fix */
+.dashboard-grid {
+  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr) minmax(310px, 380px);
+  align-items: start;
+}
+
+.dashboard-right {
+  min-width: 0;
+}
+
+@media (max-width: 1699px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(220px, 285px) minmax(0, 1fr);
+  }
+  .dashboard-right {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-right {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 780px) and (min-width: 1024px) {
+  .core-orb { transform: scale(0.88); }
+  .hud-panel { padding: 0.82rem; }
+}
+
+@media (max-width: 1023px) {
+  main { min-width: 0; }
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}

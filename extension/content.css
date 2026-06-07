@@ -258,3 +258,27 @@
     bottom: 84px;
   }
 }
+
+/* Draggable launcher fix */
+#ironcore-floating-button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#ironcore-floating-button:active {
+  cursor: grabbing;
+  transform: scale(0.97);
+}
+
+#ironcore-floating-panel {
+  right: auto;
+  bottom: auto;
+  transform-origin: top right;
+}
+
+@media (max-width: 520px) {
+  #ironcore-floating-panel {
+    width: calc(100vw - 24px);
+  }
+}

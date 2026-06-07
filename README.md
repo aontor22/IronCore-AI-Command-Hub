@@ -309,3 +309,15 @@ For the Chrome extension, open the popup and set Backend URL to your deployed UR
 ```txt
 https://iron-core-ai-command-hub.vercel.app
 ```
+
+## Latest Vercel + Responsive Fix
+
+This package includes a standalone Vercel API function at `api/[...path].ts`. It avoids importing the local Express/SQLite server in Vercel, which prevents serverless crashes from native SQLite dependencies. Local web app mode still uses the normal local server.
+
+After deploying to Vercel, test:
+
+```text
+https://your-project.vercel.app/api/health
+```
+
+The Chrome extension floating `IC` button is draggable. Drag it anywhere on the page and the extension will remember the position.

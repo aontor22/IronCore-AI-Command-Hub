@@ -1,5 +1,8 @@
 const IRONCORE_PANEL_ID = 'ironcore-floating-panel';
 const IRONCORE_BUTTON_ID = 'ironcore-floating-button';
+const IRONCORE_POS_KEY = 'ironcoreFloatingButtonPosition';
+
+let suppressNextClick = false;
 
 function getReadablePageText() {
   const selectorsToRemove = 'script, style, noscript, iframe, svg, canvas, nav, footer, header, aside';
@@ -39,6 +42,123 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#039;');
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function applyButtonPosition(position) {
+  const button = document.getElementById(IRONCORE_BUTTON_ID);
+  if (!button) return;
+
+  const size = 58;
+  const margin = 12;
+  const x = Number(position?.x);
+  const y = Number(position?.y);
+
+  if (Number.isFinite(x) && Number.isFinite(y)) {
+    button.style.left = `${clamp(x, margin, window.innerWidth - size - margin)}px`;
+    button.style.top = `${clamp(y, margin, window.innerHeight - size - margin)}px`;
+    button.style.right = 'auto';
+    button.style.bottom = 'auto';
+  } else {
+    button.style.left = 'auto';
+    button.style.top = 'auto';
+    button.style.right = '22px';
+    button.style.bottom = '22px';
+  }
+
+  positionPanelNearButton();
+}
+
+function loadButtonPosition() {
+  try {
+    chrome.storage.local.get({ [IRONCORE_POS_KEY]: null }, (data) => {
+      applyButtonPosition(data?.[IRONCORE_POS_KEY]);
+    });
+  } catch {
+    applyButtonPosition(null);
+  }
+}
+
+function saveButtonPosition(x, y) {
+  try {
+    chrome.storage.local.set({ [IRONCORE_POS_KEY]: { x, y } });
+  } catch {
+    // Position persistence is optional.
+  }
+}
+
+function positionPanelNearButton() {
+  const button = document.getElementById(IRONCORE_BUTTON_ID);
+  const panel = document.getElementById(IRONCORE_PANEL_ID);
+  if (!button || !panel) return;
+
+  const rect = button.getBoundingClientRect();
+  const panelWidth = Math.min(380, window.innerWidth - 32);
+  const estimatedHeight = Math.min(720, window.innerHeight - 28);
+  const margin = 14;
+
+  let left = rect.right + margin;
+  if (left + panelWidth > window.innerWidth - margin) left = rect.left - panelWidth - margin;
+  left = clamp(left, margin, window.innerWidth - panelWidth - margin);
+
+  let top = rect.top - 16;
+  if (top + estimatedHeight > window.innerHeight - margin) top = window.innerHeight - estimatedHeight - margin;
+  top = clamp(top, margin, window.innerHeight - 180);
+
+  panel.style.left = `${left}px`;
+  panel.style.top = `${top}px`;
+  panel.style.right = 'auto';
+  panel.style.bottom = 'auto';
+}
+
+function makeButtonDraggable(button) {
+  let startX = 0;
+  let startY = 0;
+  let startLeft = 0;
+  let startTop = 0;
+  let dragging = false;
+
+  button.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+    const rect = button.getBoundingClientRect();
+    startX = event.clientX;
+    startY = event.clientY;
+    startLeft = rect.left;
+    startTop = rect.top;
+    dragging = false;
+    button.setPointerCapture?.(event.pointerId);
+  });
+
+  button.addEventListener('pointermove', (event) => {
+    if (!button.hasPointerCapture?.(event.pointerId)) return;
+    const dx = event.clientX - startX;
+    const dy = event.clientY - startY;
+    if (Math.abs(dx) + Math.abs(dy) > 5) dragging = true;
+    if (!dragging) return;
+
+    event.preventDefault();
+    const nextLeft = clamp(startLeft + dx, 12, window.innerWidth - button.offsetWidth - 12);
+    const nextTop = clamp(startTop + dy, 12, window.innerHeight - button.offsetHeight - 12);
+    button.style.left = `${nextLeft}px`;
+    button.style.top = `${nextTop}px`;
+    button.style.right = 'auto';
+    button.style.bottom = 'auto';
+    positionPanelNearButton();
+  });
+
+  button.addEventListener('pointerup', (event) => {
+    if (button.hasPointerCapture?.(event.pointerId)) button.releasePointerCapture?.(event.pointerId);
+    if (dragging) {
+      const rect = button.getBoundingClientRect();
+      saveButtonPosition(rect.left, rect.top);
+      suppressNextClick = true;
+      window.setTimeout(() => { suppressNextClick = false; }, 80);
+    }
+    dragging = false;
+  });
+}
+
 function ensurePanel() {
   let button = document.getElementById(IRONCORE_BUTTON_ID);
   if (!button) {
@@ -46,9 +166,14 @@ function ensurePanel() {
     button.id = IRONCORE_BUTTON_ID;
     button.type = 'button';
     button.innerHTML = '<span></span><b>IC</b>';
-    button.title = 'Open IronCore AI';
+    button.title = 'Open IronCore AI. Drag to move.';
     document.documentElement.appendChild(button);
-    button.addEventListener('click', togglePanel);
+    makeButtonDraggable(button);
+    button.addEventListener('click', () => {
+      if (suppressNextClick) return;
+      togglePanel();
+    });
+    loadButtonPosition();
   }
 
   let panel = document.getElementById(IRONCORE_PANEL_ID);
@@ -100,10 +225,13 @@ function ensurePanel() {
       });
     });
   }
+
+  positionPanelNearButton();
 }
 
 function togglePanel() {
   const panel = document.getElementById(IRONCORE_PANEL_ID);
+  positionPanelNearButton();
   panel?.classList.toggle('open');
   const title = panel?.querySelector('.ic-page-title');
   if (title) title.textContent = document.title || 'Untitled page';
@@ -148,12 +276,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   if (message?.type === 'OPEN_IRONCORE_PANEL') {
     ensurePanel();
+    positionPanelNearButton();
     document.getElementById(IRONCORE_PANEL_ID)?.classList.add('open');
     sendResponse({ ok: true });
     return true;
   }
 
   return false;
+});
+
+window.addEventListener('resize', () => {
+  chrome.storage.local.get({ [IRONCORE_POS_KEY]: null }, (data) => applyButtonPosition(data?.[IRONCORE_POS_KEY]));
 });
 
 ensurePanel();

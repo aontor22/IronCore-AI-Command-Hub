@@ -166,7 +166,7 @@ function RadialGauge({ label, value, size = 76 }: { label: string; value: number
 
 function Sidebar({ active, setActive, health, pendingTasks }: { active: Tab; setActive: (tab: Tab) => void; health: Health | null; pendingTasks: number }) {
   return (
-    <aside className="hidden h-dvh max-h-dvh w-[252px] shrink-0 overflow-y-auto border-r border-cyan-300/12 bg-[#030b16]/88 p-3 shadow-[inset_-1px_0_0_rgba(34,211,238,.08)] backdrop-blur-2xl lg:sticky lg:top-0 lg:flex lg:flex-col xl:w-[268px] xl:p-4">
+    <aside className="hidden h-dvh max-h-dvh w-[228px] shrink-0 overflow-y-auto border-r border-cyan-300/12 bg-[#030b16]/88 p-3 shadow-[inset_-1px_0_0_rgba(34,211,238,.08)] backdrop-blur-2xl lg:sticky lg:top-0 lg:flex lg:flex-col xl:w-[244px] 2xl:w-[268px] 2xl:p-4">
       <div className="mb-4 flex items-center gap-3 rounded-2xl border border-cyan-300/16 bg-cyan-300/[0.04] p-3 xl:mb-7">
         <div className="hex-badge flex h-12 w-12 items-center justify-center text-cyan-100">
           <ShieldCheck size={25} />
@@ -260,11 +260,11 @@ function TopBar({ health, refreshAll }: { health: Health | null; refreshAll: () 
 
 function CoreOrb({ active, pendingTasks, memoryCount, fileCount, onClick }: { active: Tab; pendingTasks: number; memoryCount: number; fileCount: number; onClick: () => void }) {
   return (
-    <div className="relative mx-auto flex min-h-[330px] items-center justify-center py-2 sm:min-h-[380px] 2xl:min-h-[440px] 2xl:py-4">
+    <div className="relative mx-auto flex min-h-[260px] items-center justify-center py-1 sm:min-h-[310px] 2xl:min-h-[430px] 2xl:py-4">
       <div className="absolute left-2 top-1/2 hidden -translate-y-1/2 2xl:block"><RadialGauge label="Focus" value={74} size={86} /></div>
       <div className="absolute right-2 top-1/2 hidden -translate-y-1/2 2xl:block"><RadialGauge label="Confidence" value={92} size={86} /></div>
 
-      <button onClick={onClick} className="core-orb group relative flex h-[292px] w-[292px] items-center justify-center rounded-full sm:h-[350px] sm:w-[350px] 2xl:h-[440px] 2xl:w-[440px]" title="Cycle dashboard mode">
+      <button onClick={onClick} className="core-orb group relative flex h-[248px] w-[248px] items-center justify-center rounded-full sm:h-[300px] sm:w-[300px] 2xl:h-[430px] 2xl:w-[430px]" title="Cycle dashboard mode">
         <span className="core-ring ring-one" />
         <span className="core-ring ring-two" />
         <span className="core-ring ring-three" />
@@ -273,7 +273,7 @@ function CoreOrb({ active, pendingTasks, memoryCount, fileCount, onClick }: { ac
         <span className="absolute h-[44%] w-[44%] rounded-full border border-cyan-200/50 bg-[#02101f]/84 shadow-[0_0_60px_rgba(34,211,238,.34),inset_0_0_50px_rgba(34,211,238,.08)]" />
         <span className="relative z-10 text-center">
           <span className="block font-mono text-[11px] uppercase tracking-[0.26em] text-cyan-300/90">Assistant Core</span>
-          <span className="mt-3 block text-3xl font-semibold tracking-[0.08em] text-cyan-50 sm:text-4xl 2xl:text-5xl">IRONCORE</span>
+          <span className="mt-3 block text-2xl font-semibold tracking-[0.08em] text-cyan-50 sm:text-4xl 2xl:text-5xl">IRONCORE</span>
           <span className="mx-auto mt-4 flex h-8 w-40 items-end justify-center gap-1 opacity-90">
             {Array.from({ length: 26 }).map((_, idx) => <span key={idx} className="wave-bar" style={{ animationDelay: `${idx * 42}ms`, height: `${9 + ((idx * 13) % 22)}px` }} />)}
           </span>
@@ -441,7 +441,7 @@ function VoiceAssistantCard({ isListening, startVoice }: { isListening: boolean;
 
 function FilesBrowserContext({ files }: { files: UploadedFile[] }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
       <HudPanel title="Files" count={files.length}>
         <div className="grid gap-2">
           {files.slice(0, 4).map((file) => <div key={file.id} className="flex items-center justify-between gap-2 text-sm"><span className="truncate text-cyan-50/75">{file.name}</span><span className="font-mono text-[10px] text-cyan-300/55">TXT</span></div>)}
@@ -812,7 +812,7 @@ export function Dashboard(props: DashboardProps) {
 
       <div className="relative z-10 flex min-h-screen">
         <Sidebar active={active} setActive={setActive} health={health} pendingTasks={pendingTasks} />
-        <main className="min-w-0 flex-1 overflow-x-hidden">
+        <main className="min-w-0 flex-1 overflow-x-hidden lg:h-dvh lg:overflow-y-auto">
           <TopBar health={health} refreshAll={props.refreshAll} />
           <div className="px-4 pb-8 lg:px-6">
             <div className="mb-4 flex gap-2 overflow-x-auto pb-2 lg:hidden">
@@ -823,19 +823,19 @@ export function Dashboard(props: DashboardProps) {
             </div>
 
             {active === 'dashboard' ? (
-              <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[minmax(250px,310px)_minmax(520px,1fr)] 2xl:grid-cols-[minmax(250px,300px)_minmax(420px,1fr)_minmax(330px,390px)]">
-                <div className="grid content-start gap-4">
+              <div className="dashboard-grid mx-auto grid max-w-[1560px] gap-4">
+                <div className="min-w-0 grid content-start gap-4">
                   <ActiveTasksPanel tasks={props.tasks} onNewTask={() => setActive('tasks')} toggleTaskStatus={props.toggleTaskStatus} />
                   <ReminderPanel tasks={props.tasks} />
                   <MemorySnapshots memories={props.memories} />
                 </div>
 
-                <div className="grid gap-4">
+                <div className="min-w-0 grid gap-4">
                   <CoreOrb active={active} pendingTasks={pendingTasks} memoryCount={props.memories.length} fileCount={files.length} onClick={cycleMode} />
                   <FilesBrowserContext files={files} />
                 </div>
 
-                <div className="grid content-start gap-4 xl:col-span-2 2xl:col-span-1">
+                <div className="dashboard-right min-w-0 grid content-start gap-4">
                   <SystemStatusPanel health={health} />
                   <RecentActivity messages={messages} tasks={props.tasks} files={files} />
                   <QuickActions onPrompt={sendCommand} />
