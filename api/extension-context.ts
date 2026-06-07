@@ -1,19 +1,17 @@
-import { getBody, getLightStore, nextLightId, now, redactSensitive, sendJson, setCors, truncate } from './ironcore-shared';
+function setCors(res: any) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
 
 export default async function handler(req: any, res: any) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') return sendJson(res, 200, { ok: true, message: 'IronCore extension context endpoint is online. Send POST requests here.' });
-
-  const body = await getBody(req);
-  const store = getLightStore();
-  const memory = {
-    id: nextLightId(),
-    userId: 1,
-    content: `Browser context saved\nURL: ${body.pageUrl || 'unknown'}\nTitle: ${body.pageTitle || 'unknown'}\nSelected text: ${redactSensitive(body.selectedText || 'none')}\nPage snippet: ${truncate(redactSensitive(body.pageText || ''), 800)}`,
-    source: 'extension',
-    createdAt: now(),
-  };
-  store.memories.unshift(memory);
-  return sendJson(res, 200, { success: true, memory, route: '/api/extension-context' });
+  return res.status(200).json({
+    ok: true,
+    success: true,
+    message: req.method === 'POST' ? 'Extension context received.' : 'IronCore extension context endpoint online. Send POST requests here.',
+    route: '/api/extension-context',
+    timestamp: new Date().toISOString(),
+  });
 }

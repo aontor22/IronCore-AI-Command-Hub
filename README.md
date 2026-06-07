@@ -341,8 +341,8 @@ This build includes an updated Chrome extension companion and Vercel API handler
 GEMINI_API_KEY=your_real_key_here
 GEMINI_MODEL=gemini-3.1-pro-preview
 GEMINI_FAST_MODEL=gemini-3.1-pro-preview
-GEMINI_TIMEOUT_MS=22000
-EXTENSION_TIMEOUT_MS=18000
+GEMINI_TIMEOUT_MS=9000
+EXTENSION_TIMEOUT_MS=9000
 BRAVE_SEARCH_API_KEY=
 ```
 
@@ -366,3 +366,8 @@ https://iron-core-ai-command-hub.vercel.app
 ```
 
 Do not include `/api/health` or any API path in the extension Backend URL.
+
+
+## Vercel API crash fix
+
+If `/api/health` shows `FUNCTION_INVOCATION_FAILED`, use the standalone Vercel API version and see `VERCEL_API_CRASH_FIX.md`.

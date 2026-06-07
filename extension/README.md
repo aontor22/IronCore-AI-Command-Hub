@@ -5,7 +5,7 @@ This folder contains the Chrome extension companion for the IronCore AI Command 
 The extension does not contain any Gemini API key. It sends selected text, page title, URL, and readable page text to your IronCore backend at your configured Backend URL. For local development, use:
 
 ```txt
-http://localhost:3000/api/extension/command
+http://localhost:3000/api/extension-command
 ```
 
 ## Requirements
