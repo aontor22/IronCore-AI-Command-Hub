@@ -1,0 +1,50 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#123B4A"/>
+      <stop offset="55%" stop-color="#061923"/>
+      <stop offset="100%" stop-color="#02070C"/>
+    </radialGradient>
+    <linearGradient id="cyan" x1="120" y1="80" x2="392" y2="432">
+      <stop offset="0%" stop-color="#7DF9FF"/>
+      <stop offset="45%" stop-color="#10E7FF"/>
+      <stop offset="100%" stop-color="#008CFF"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <path d="M256 54L387 108V225C387 312 336 389 256 438C176 389 125 312 125 225V108L256 54Z"
+        stroke="url(#cyan)" stroke-width="18" stroke-linejoin="round" filter="url(#glow)" opacity="0.95"/>
+  <path d="M256 94L351 133V222C351 289 314 349 256 388C198 349 161 289 161 222V133L256 94Z"
+        stroke="#16DFFF" stroke-width="6" stroke-linejoin="round" opacity="0.45"/>
+
+  <circle cx="256" cy="248" r="94" stroke="#13E8FF" stroke-width="10" filter="url(#glow)"/>
+  <circle cx="256" cy="248" r="124" stroke="#16DFFF" stroke-width="3" opacity="0.38"/>
+  <circle cx="256" cy="248" r="63" fill="#03151D" stroke="#7DF9FF" stroke-width="4" opacity="0.95"/>
+
+  <g filter="url(#softGlow)">
+    <text x="256" y="271" text-anchor="middle" font-family="Arial, Helvetica, sans-serif"
+          font-size="66" font-weight="800" letter-spacing="2" fill="#DDFDFF">IC</text>
+  </g>
+
+  <g stroke="#58F3FF" stroke-width="8" stroke-linecap="round" opacity="0.95" filter="url(#glow)">
+    <path d="M256 118V147"/>
+    <path d="M256 350V379"/>
+    <path d="M126 248H155"/>
+    <path d="M357 248H386"/>
+  </g>
+</svg>
