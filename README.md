@@ -347,3 +347,22 @@ BRAVE_SEARCH_API_KEY=
 ```
 
 Never commit real keys to `.env.example` or GitHub.
+
+## Latest Extension Route Fix
+
+If the extension shows `Connection problem: The page could not be found`, redeploy this latest version and test:
+
+```text
+/api/health
+/api/gemini-test
+/api/extension-command
+/api/extension-context
+```
+
+In extension settings, set Backend URL to the Vercel site root only, for example:
+
+```text
+https://iron-core-ai-command-hub.vercel.app
+```
+
+Do not include `/api/health` or any API path in the extension Backend URL.

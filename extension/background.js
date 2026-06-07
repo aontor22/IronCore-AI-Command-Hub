@@ -38,7 +38,10 @@ async function apiFetch(path, options = {}) {
     const payload = contentType.includes('application/json') ? await response.json() : await response.text();
 
     if (!response.ok) {
-      const message = typeof payload === 'string' ? payload : payload?.error || `Request failed with ${response.status}`;
+      let message = typeof payload === 'string' ? payload : payload?.error || payload?.message || `Request failed with ${response.status}`;
+      if (response.status === 404 || /NOT_FOUND/i.test(String(message))) {
+        message = `The IronCore extension API route was not found. Redeploy the latest code and test /api/extension-command. Backend URL should be only the site root, not /api/health. Original: ${message}`;
+      }
       throw new Error(message);
     }
 
@@ -121,7 +124,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       if (message?.type === 'SAVE_CONTEXT') {
-        const data = await apiFetch('/api/extension/context', {
+        const data = await apiFetch('/api/extension-context', {
           method: 'POST',
           timeoutMs: 12000,
           body: JSON.stringify(message.context || {}),
@@ -132,7 +135,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       if (message?.type === 'EXTENSION_COMMAND') {
         await setBadge('AI');
-        const data = await apiFetch('/api/extension/command', {
+        const data = await apiFetch('/api/extension-command', {
           method: 'POST',
           timeoutMs: 26000,
           body: JSON.stringify(message.payload || {}),
