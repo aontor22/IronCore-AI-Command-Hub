@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IronCore AI</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <span>ASSISTANT CORE</span>
+        <h1>IronCore</h1>
+      </div>
+      <button id="openWebApp" title="Open dashboard">↗</button>
+    </header>
+
+    <section class="orb-card">
+      <div class="orb">
+        <i></i>
+        <strong id="statusText">CHECK</strong>
+      </div>
+      <div class="status-copy">
+        <b>Browser Companion</b>
+        <p id="healthCopy">Checking backend connection...</p>
+      </div>
+    </section>
+
+    <section class="settings-card">
+      <label for="backendUrl">Backend URL</label>
+      <div class="url-row">
+        <input id="backendUrl" type="text" value="http://localhost:3000" />
+        <button id="saveSettings">Save</button>
+      </div>
+    </section>
+
+    <section class="context-card">
+      <div class="context-head">
+        <span>Current Tab</span>
+        <button id="refreshContext">Refresh</button>
+      </div>
+      <h2 id="pageTitle">No page loaded</h2>
+      <p id="pageUrl">Open a normal website tab to use page context.</p>
+      <small id="selectionInfo">No selected text detected.</small>
+    </section>
+
+    <section class="quick-grid">
+      <button data-command="Summarize this page clearly with key points and next actions.">Summarize Page</button>
+      <button data-command="Explain the selected text clearly. If nothing is selected, explain the current page topic.">Explain Selection</button>
+      <button data-command="Extract useful data, links, names, dates, and action items from this page.">Extract Data</button>
+      <button data-command="Rewrite the selected text in a concise professional tone.">Rewrite Text</button>
+    </section>
+
+    <section class="command-card">
+      <textarea id="commandInput" rows="4" placeholder="Ask IronCore about this page..."></textarea>
+      <div class="command-actions">
+        <button id="saveContext">Save Context</button>
+        <button id="sendCommand" class="primary">Send</button>
+      </div>
+    </section>
+
+    <section class="response-card">
+      <div class="response-head">
+        <span>Response</span>
+        <button id="copyResponse">Copy</button>
+      </div>
+      <pre id="responseOutput">Ready.</pre>
+    </section>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+#ironcore-floating-button,
+#ironcore-floating-panel,
+#ironcore-floating-panel * {
+  box-sizing: border-box;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#ironcore-floating-button {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 2147483646;
+  width: 58px;
+  height: 58px;
+  border-radius: 999px;
+  border: 1px solid rgba(65, 242, 255, 0.7);
+  background: radial-gradient(circle at 50% 45%, rgba(40, 241, 255, 0.42), rgba(3, 12, 24, 0.95) 55%, rgba(5, 12, 30, 0.98));
+  color: #dffcff;
+  cursor: pointer;
+  box-shadow: 0 0 28px rgba(18, 247, 255, 0.45), inset 0 0 18px rgba(18, 247, 255, 0.28);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+#ironcore-floating-button span {
+  position: absolute;
+  inset: 8px;
+  border-radius: 999px;
+  border: 1px dashed rgba(200, 253, 255, 0.75);
+  animation: ironcoreSpin 7s linear infinite;
+}
+
+#ironcore-floating-button b {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  letter-spacing: 0.08em;
+}
+
+#ironcore-floating-panel {
+  position: fixed;
+  right: 22px;
+  bottom: 92px;
+  z-index: 2147483645;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 130px));
+  transform: translateY(18px) scale(0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: 180ms ease;
+}
+
+#ironcore-floating-panel.open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ic-panel-shell {
+  color: #e9feff;
+  border: 1px solid rgba(87, 244, 255, 0.28);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top, rgba(18, 247, 255, 0.2), transparent 36%),
+    linear-gradient(140deg, rgba(5, 13, 28, 0.96), rgba(2, 6, 16, 0.97));
+  box-shadow: 0 22px 80px rgba(0, 0, 0, 0.54), 0 0 44px rgba(18, 247, 255, 0.16), inset 0 0 28px rgba(18, 247, 255, 0.08);
+  backdrop-filter: blur(18px);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.ic-panel-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.ic-panel-header,
+.ic-actions,
+.ic-quick-grid,
+.ic-page-card,
+.ic-command,
+.ic-response,
+.ic-core-mini {
+  position: relative;
+  z-index: 1;
+}
+
+.ic-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ic-panel-header small {
+  display: block;
+  color: #66f3ff;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.ic-panel-header strong {
+  display: block;
+  font-size: 20px;
+  letter-spacing: 0.05em;
+}
+
+.ic-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  border: 1px solid rgba(85, 238, 255, 0.22);
+  background: rgba(255,255,255,0.06);
+  color: #dbfbff;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.ic-core-mini {
+  display: grid;
+  place-items: center;
+  margin: 4px auto 14px;
+  width: 116px;
+  height: 116px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(34, 244, 255, 0.24), rgba(0, 0, 0, 0) 68%);
+}
+
+.ic-ring {
+  position: absolute;
+  width: 106px;
+  height: 106px;
+  border-radius: 999px;
+  border: 1px dashed rgba(91, 245, 255, 0.8);
+  box-shadow: inset 0 0 18px rgba(18, 247, 255, 0.24), 0 0 20px rgba(18, 247, 255, 0.22);
+  animation: ironcoreSpin 12s linear infinite;
+}
+
+.ic-core-label {
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: #dffcff;
+  text-shadow: 0 0 16px rgba(18, 247, 255, 0.8);
+}
+
+.ic-page-card {
+  border: 1px solid rgba(91, 245, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.055);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.ic-page-card span,
+.ic-page-card small {
+  display: block;
+  color: rgba(222, 252, 255, 0.72);
+  font-size: 11px;
+}
+
+.ic-page-card b {
+  display: block;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 1.35;
+  margin: 4px 0;
+}
+
+.ic-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ic-quick-grid button,
+.ic-actions button {
+  border: 1px solid rgba(91, 245, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(12, 42, 65, 0.76);
+  color: #dcfbff;
+  cursor: pointer;
+  min-height: 38px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.ic-quick-grid button:hover,
+.ic-actions button:hover,
+.ic-close:hover {
+  background: rgba(18, 247, 255, 0.18);
+  box-shadow: 0 0 18px rgba(18, 247, 255, 0.2);
+}
+
+.ic-command {
+  width: 100%;
+  resize: vertical;
+  min-height: 74px;
+  color: #eaffff;
+  border: 1px solid rgba(91, 245, 255, 0.18);
+  border-radius: 16px;
+  background: rgba(0, 10, 22, 0.72);
+  padding: 12px;
+  outline: none;
+  margin-bottom: 10px;
+}
+
+.ic-command:focus {
+  border-color: rgba(18, 247, 255, 0.72);
+  box-shadow: 0 0 0 3px rgba(18, 247, 255, 0.1);
+}
+
+.ic-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ic-actions .ic-send {
+  background: linear-gradient(135deg, rgba(18, 247, 255, 0.26), rgba(34, 93, 255, 0.2));
+}
+
+.ic-response {
+  min-height: 110px;
+  max-height: 230px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: #c7f8ff;
+  font-size: 12px;
+  line-height: 1.55;
+  border: 1px solid rgba(91, 245, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(0, 8, 18, 0.72);
+  padding: 12px;
+  margin: 0;
+}
+
+@keyframes ironcoreSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  #ironcore-floating-button {
+    right: 16px;
+    bottom: 16px;
+  }
+  #ironcore-floating-panel {
+    right: 16px;
+    bottom: 84px;
+  }
+}
