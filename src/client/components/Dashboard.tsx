@@ -421,12 +421,12 @@ function QuickActions({ onPrompt }: { onPrompt: (prompt: string) => Promise<void
   );
 }
 
-function VoiceAssistantCard({ isListening, startVoice }: { isListening: boolean; startVoice: () => void }) {
+function VoiceAssistantCard({ isListening, startVoice, voiceStatus }: { isListening: boolean; startVoice: () => void; voiceStatus: string }) {
   return (
     <HudPanel title="Voice Assistant">
       <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">
-          <p className="mb-3 text-sm text-cyan-50/70">{isListening ? 'Listening...' : 'Standby. Tap the mic to speak.'}</p>
+          <p className="mb-3 text-sm text-cyan-50/70">{voiceStatus}</p>
           <div className="flex h-12 items-center gap-1 overflow-hidden">
             {Array.from({ length: 44 }).map((_, idx) => <span key={idx} className="voice-wave" style={{ animationDelay: `${idx * 28}ms`, height: `${8 + ((idx * 9) % 36)}px` }} />)}
           </div>
@@ -726,6 +726,7 @@ export function Dashboard(props: DashboardProps) {
   const [health, setHealth] = useState<Health | null>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isListening, setIsListening] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('Standby. Tap the mic to speak.');
   const recognitionRef = useRef<any>(null);
   const { messages, pendingActions, sendMessage, confirmAction, cancelAction, clearHistory, isLoading } = useChat();
 
@@ -774,22 +775,39 @@ export function Dashboard(props: DashboardProps) {
 
   const toggleVoice = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition) {
+      setVoiceStatus('Voice input is not supported in this browser. Try Chrome or Edge on HTTPS.');
+      return;
+    }
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
+      setVoiceStatus('Voice stopped. Tap the mic to speak again.');
       return;
     }
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
     recognition.lang = 'en-US';
     recognition.interimResults = false;
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onerror = () => setIsListening(false);
+    recognition.continuous = false;
+    recognition.onstart = () => {
+      setIsListening(true);
+      setVoiceStatus('Listening... speak your command now.');
+    };
+    recognition.onend = () => {
+      setIsListening(false);
+      setVoiceStatus('Standby. Tap the mic to speak.');
+    };
+    recognition.onerror = (event: any) => {
+      setIsListening(false);
+      setVoiceStatus(`Voice error: ${event?.error || 'unknown'}. Check microphone permission.`);
+    };
     recognition.onresult = async (event: any) => {
       const transcript = event.results?.[0]?.[0]?.transcript;
-      if (transcript) await sendCommand(transcript);
+      if (transcript) {
+        setVoiceStatus(`Heard: ${transcript}`);
+        await sendCommand(transcript);
+      }
     };
     recognition.start();
   };
@@ -839,7 +857,7 @@ export function Dashboard(props: DashboardProps) {
                   <SystemStatusPanel health={health} />
                   <RecentActivity messages={messages} tasks={props.tasks} files={files} />
                   <QuickActions onPrompt={sendCommand} />
-                  <VoiceAssistantCard isListening={isListening} startVoice={toggleVoice} />
+                  <VoiceAssistantCard isListening={isListening} startVoice={toggleVoice} voiceStatus={voiceStatus} />
                   <HudPanel title="Mission Metrics">
                     <div className="grid grid-cols-3 gap-3 text-center">
                       <div><p className="text-2xl font-bold text-cyan-50">{pendingTasks}</p><p className="font-mono text-[9px] uppercase tracking-widest text-cyan-300/55">Pending</p></div>

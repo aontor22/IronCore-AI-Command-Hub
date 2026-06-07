@@ -1,29 +1,56 @@
 const DEFAULT_BACKEND_URL = 'https://iron-core-ai-command-hub.vercel.app';
+const REQUEST_TIMEOUT_MS = 24000;
+
+function normalizeBackendUrl(value) {
+  const raw = String(value || DEFAULT_BACKEND_URL).trim() || DEFAULT_BACKEND_URL;
+  try {
+    const url = new URL(raw.startsWith('http') ? raw : `https://${raw}`);
+    url.pathname = url.pathname.replace(/\/api(?:\/.*)?$/i, '').replace(/\/$/, '');
+    url.search = '';
+    url.hash = '';
+    return url.toString().replace(/\/$/, '');
+  } catch {
+    return DEFAULT_BACKEND_URL;
+  }
+}
 
 async function getBackendUrl() {
   const { backendUrl } = await chrome.storage.sync.get({ backendUrl: DEFAULT_BACKEND_URL });
-  return String(backendUrl || DEFAULT_BACKEND_URL).replace(/\/$/, '');
+  return normalizeBackendUrl(backendUrl);
 }
 
 async function apiFetch(path, options = {}) {
   const backendUrl = await getBackendUrl();
-  const response = await fetch(`${backendUrl}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-  });
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), options.timeoutMs || REQUEST_TIMEOUT_MS);
 
-  const contentType = response.headers.get('content-type') || '';
-  const payload = contentType.includes('application/json') ? await response.json() : await response.text();
+  try {
+    const response = await fetch(`${backendUrl}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+    });
 
-  if (!response.ok) {
-    const message = typeof payload === 'string' ? payload : payload?.error || `Request failed with ${response.status}`;
-    throw new Error(message);
+    const contentType = response.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json') ? await response.json() : await response.text();
+
+    if (!response.ok) {
+      const message = typeof payload === 'string' ? payload : payload?.error || `Request failed with ${response.status}`;
+      throw new Error(message);
+    }
+
+    return payload;
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error(`Request timed out after ${Math.round((options.timeoutMs || REQUEST_TIMEOUT_MS) / 1000)}s. The backend is online, but the AI model may be slow. Try a shorter selection or set a faster GEMINI_FAST_MODEL.`);
+    }
+    throw error;
+  } finally {
+    globalThis.clearTimeout(timeout);
   }
-
-  return payload;
 }
 
 async function setBadge(text, color = '#00d9ff') {
@@ -36,7 +63,8 @@ async function setBadge(text, color = '#00d9ff') {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-  await chrome.storage.sync.set({ backendUrl: DEFAULT_BACKEND_URL });
+  const { backendUrl } = await chrome.storage.sync.get({ backendUrl: DEFAULT_BACKEND_URL });
+  await chrome.storage.sync.set({ backendUrl: normalizeBackendUrl(backendUrl) });
   await setBadge('ON');
 
   chrome.contextMenus.removeAll(() => {
@@ -58,18 +86,8 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     ? `Explain this selected text clearly: ${info.selectionText || ''}`
     : 'Summarize this page clearly and list the key action points.';
 
-  await chrome.storage.local.set({
-    queuedCommand: command,
-    queuedAt: Date.now(),
-    queuedTabId: tab?.id || null,
-  });
-
-  try {
-    await chrome.action.setBadgeText({ text: 'ASK' });
-    await chrome.action.setBadgeBackgroundColor({ color: '#12f7ff' });
-  } catch {
-    // Ignore badge failure.
-  }
+  await chrome.storage.local.set({ queuedCommand: command, queuedAt: Date.now(), queuedTabId: tab?.id });
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'OPEN_IRONCORE_PANEL' }).catch(() => undefined);
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -77,19 +95,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       if (message?.type === 'GET_SETTINGS') {
         const data = await chrome.storage.sync.get({ backendUrl: DEFAULT_BACKEND_URL });
-        sendResponse({ ok: true, ...data });
+        sendResponse({ ok: true, backendUrl: normalizeBackendUrl(data.backendUrl) });
         return;
       }
 
       if (message?.type === 'SAVE_SETTINGS') {
-        const nextUrl = String(message.backendUrl || DEFAULT_BACKEND_URL).replace(/\/$/, '');
+        const nextUrl = normalizeBackendUrl(message.backendUrl);
         await chrome.storage.sync.set({ backendUrl: nextUrl });
         sendResponse({ ok: true, backendUrl: nextUrl });
         return;
       }
 
       if (message?.type === 'HEALTH_CHECK') {
-        const data = await apiFetch('/api/health');
+        const data = await apiFetch('/api/health', { timeoutMs: 10000 });
         await setBadge(data?.ok ? 'ON' : 'ERR', data?.ok ? '#00d9ff' : '#ff5c7a');
         sendResponse({ ok: true, data });
         return;
@@ -105,6 +123,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message?.type === 'SAVE_CONTEXT') {
         const data = await apiFetch('/api/extension/context', {
           method: 'POST',
+          timeoutMs: 12000,
           body: JSON.stringify(message.context || {}),
         });
         sendResponse({ ok: true, data });
@@ -115,6 +134,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         await setBadge('AI');
         const data = await apiFetch('/api/extension/command', {
           method: 'POST',
+          timeoutMs: 26000,
           body: JSON.stringify(message.payload || {}),
         });
         await setBadge('ON');

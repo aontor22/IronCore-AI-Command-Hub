@@ -323,3 +323,34 @@ option {
     grid-template-columns: 1fr;
   }
 }
+
+/* 2026-06 responsive dashboard fix: keep three columns on common 1366px laptops */
+@media (min-width: 1181px) and (max-width: 1699px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(210px, 255px) minmax(420px, 1fr) minmax(270px, 330px) !important;
+  }
+  .dashboard-right {
+    grid-column: auto !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 1024px) and (max-height: 820px) {
+  .dashboard-grid {
+    gap: 0.75rem !important;
+  }
+  .core-orb {
+    transform: scale(0.82) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .dashboard-grid,
+  .dashboard-right {
+    grid-template-columns: 1fr !important;
+  }
+  .dashboard-right {
+    grid-column: auto !important;
+  }
+}

@@ -321,3 +321,29 @@ https://your-project.vercel.app/api/health
 ```
 
 The Chrome extension floating `IC` button is draggable. Drag it anywhere on the page and the extension will remember the position.
+
+## Latest Fix: Extension Voice + Vercel API Stability
+
+This build includes an updated Chrome extension companion and Vercel API handler.
+
+### What changed
+
+- Extension command requests now have timeout handling, so the UI will not stay on "Thinking..." indefinitely.
+- The extension now normalizes Backend URL values. Use the app root URL only, for example `https://your-app.vercel.app`.
+- Added voice input and speech playback to both the popup and floating panel.
+- Added sensitive-key redaction before browser context is sent to the backend.
+- Added `/api/gemini-test` for checking whether the Gemini model itself can respond.
+- Improved 1366px laptop responsiveness and dashboard panel layout.
+
+### Vercel env variables
+
+```env
+GEMINI_API_KEY=your_real_key_here
+GEMINI_MODEL=gemini-3.1-pro-preview
+GEMINI_FAST_MODEL=gemini-3.1-pro-preview
+GEMINI_TIMEOUT_MS=22000
+EXTENSION_TIMEOUT_MS=18000
+BRAVE_SEARCH_API_KEY=
+```
+
+Never commit real keys to `.env.example` or GitHub.

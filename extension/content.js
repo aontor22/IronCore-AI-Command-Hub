@@ -3,20 +3,29 @@ const IRONCORE_BUTTON_ID = 'ironcore-floating-button';
 const IRONCORE_POS_KEY = 'ironcoreFloatingButtonPosition';
 
 let suppressNextClick = false;
+let panelRecognition = null;
+let panelListening = false;
+
+function redactSensitive(input = '') {
+  return String(input)
+    .replace(/AIza[0-9A-Za-z\-_]{20,}/g, '[REDACTED_GOOGLE_API_KEY]')
+    .replace(/sk-[0-9A-Za-z\-_]{20,}/g, '[REDACTED_SECRET_KEY]')
+    .replace(/(api[_-]?key|token|secret|password)\s*[:=]\s*['\"]?[^\s'\"]+/gi, '$1=[REDACTED]');
+}
 
 function getReadablePageText() {
   const selectorsToRemove = 'script, style, noscript, iframe, svg, canvas, nav, footer, header, aside';
   const clone = document.body ? document.body.cloneNode(true) : null;
   if (!clone) return '';
   clone.querySelectorAll(selectorsToRemove).forEach((node) => node.remove());
-  return clone.innerText.replace(/\s+/g, ' ').trim().slice(0, 12000);
+  return redactSensitive(clone.innerText.replace(/\s+/g, ' ').trim()).slice(0, 7000);
 }
 
 function getPageContext() {
   return {
     pageTitle: document.title || '',
     pageUrl: location.href,
-    selectedText: String(window.getSelection?.() || '').trim(),
+    selectedText: redactSensitive(String(window.getSelection?.() || '').trim()).slice(0, 1400),
     pageText: getReadablePageText(),
   };
 }
@@ -159,6 +168,65 @@ function makeButtonDraggable(button) {
   });
 }
 
+function getRecognitionConstructor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition;
+}
+
+function setVoiceState(active, note) {
+  panelListening = active;
+  const panel = document.getElementById(IRONCORE_PANEL_ID);
+  const mic = panel?.querySelector('.ic-mic');
+  const noteEl = panel?.querySelector('.ic-voice-note');
+  if (mic) mic.classList.toggle('active', active);
+  if (noteEl) noteEl.textContent = note || (active ? 'Listening...' : 'Voice ready');
+}
+
+function startPanelVoice() {
+  const SpeechRecognition = getRecognitionConstructor();
+  const panel = document.getElementById(IRONCORE_PANEL_ID);
+  const input = panel?.querySelector('.ic-command');
+  const responseBox = panel?.querySelector('.ic-response');
+
+  if (!SpeechRecognition) {
+    if (responseBox) responseBox.textContent = 'Voice input is not available in this browser. Try Chrome or Edge on HTTPS pages.';
+    return;
+  }
+
+  if (panelListening && panelRecognition) {
+    panelRecognition.stop();
+    setVoiceState(false, 'Voice stopped');
+    return;
+  }
+
+  const recognition = new SpeechRecognition();
+  panelRecognition = recognition;
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.continuous = false;
+  recognition.onstart = () => setVoiceState(true, 'Listening... speak now');
+  recognition.onend = () => setVoiceState(false, 'Voice ready');
+  recognition.onerror = (event) => setVoiceState(false, `Voice error: ${event.error || 'unknown'}`);
+  recognition.onresult = (event) => {
+    const transcript = event.results?.[0]?.[0]?.transcript || '';
+    if (input && transcript) {
+      input.value = transcript;
+      input.focus();
+    }
+  };
+  recognition.start();
+}
+
+function speakPanelResponse() {
+  const text = document.getElementById(IRONCORE_PANEL_ID)?.querySelector('.ic-response')?.textContent || '';
+  if (!text.trim()) return;
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text.replace(/[*_`>#]/g, '').slice(0, 900));
+  utterance.rate = 0.96;
+  utterance.pitch = 0.92;
+  window.speechSynthesis.speak(utterance);
+}
+
 function ensurePanel() {
   let button = document.getElementById(IRONCORE_BUTTON_ID);
   if (!button) {
@@ -205,6 +273,11 @@ function ensurePanel() {
           <button type="button" data-command="Rewrite the selected text in a clearer professional tone.">Rewrite</button>
         </div>
         <textarea class="ic-command" rows="3" placeholder="Ask IronCore about this page..."></textarea>
+        <div class="ic-voice-row">
+          <button type="button" class="ic-mic">🎙 Voice</button>
+          <button type="button" class="ic-speak">🔊 Speak</button>
+          <span class="ic-voice-note">Voice ready</span>
+        </div>
         <div class="ic-actions">
           <button type="button" class="ic-save">Save context</button>
           <button type="button" class="ic-send">Send command</button>
@@ -217,6 +290,8 @@ function ensurePanel() {
     panel.querySelector('.ic-close')?.addEventListener('click', () => panel.classList.remove('open'));
     panel.querySelector('.ic-send')?.addEventListener('click', sendPanelCommand);
     panel.querySelector('.ic-save')?.addEventListener('click', saveContextFromPanel);
+    panel.querySelector('.ic-mic')?.addEventListener('click', startPanelVoice);
+    panel.querySelector('.ic-speak')?.addEventListener('click', speakPanelResponse);
     panel.querySelectorAll('[data-command]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const input = panel.querySelector('.ic-command');
@@ -241,6 +316,7 @@ async function sendPanelCommand() {
   const panel = document.getElementById(IRONCORE_PANEL_ID);
   const input = panel?.querySelector('.ic-command');
   const responseBox = panel?.querySelector('.ic-response');
+  const sendButton = panel?.querySelector('.ic-send');
   const userCommand = input?.value?.trim();
 
   if (!userCommand) {
@@ -248,12 +324,14 @@ async function sendPanelCommand() {
     return;
   }
 
+  if (sendButton) sendButton.disabled = true;
   responseBox.textContent = 'Thinking through browser context...';
   const payload = { userCommand, ...getPageContext() };
   const response = await sendRuntimeMessage({ type: 'EXTENSION_COMMAND', payload });
+  if (sendButton) sendButton.disabled = false;
 
   if (!response?.ok) {
-    responseBox.textContent = `Connection problem: ${response?.error || 'Unknown error'}\n\nMake sure the Backend URL in the extension popup points to your running local app or Vercel deployment`;
+    responseBox.textContent = `Connection problem: ${response?.error || 'Unknown error'}\n\nOpen the popup and make sure the Backend URL is your Vercel app root, not /api/health.`;
     return;
   }
 

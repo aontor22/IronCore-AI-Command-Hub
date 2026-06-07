@@ -208,6 +208,33 @@ input:focus, textarea:focus {
   font-size: 12px;
 }
 
+
+.voice-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.voice-actions button {
+  min-height: 36px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.voice-actions button.active {
+  background: rgba(18, 247, 255, 0.35);
+  color: #00101d;
+  box-shadow: 0 0 22px rgba(18, 247, 255, 0.28);
+}
+
+#voiceStatus {
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
 .command-actions {
   margin-top: 10px;
 }

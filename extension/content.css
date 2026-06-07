@@ -44,7 +44,7 @@
   bottom: 92px;
   z-index: 2147483645;
   width: min(380px, calc(100vw - 32px));
-  max-height: min(720px, calc(100vh - 130px));
+  max-height: min(760px, calc(100vh - 110px));
   transform: translateY(18px) scale(0.96);
   opacity: 0;
   pointer-events: none;
@@ -86,7 +86,8 @@
 .ic-page-card,
 .ic-command,
 .ic-response,
-.ic-core-mini {
+.ic-core-mini,
+.ic-voice-row {
   position: relative;
   z-index: 1;
 }
@@ -231,7 +232,7 @@
 
 .ic-response {
   min-height: 110px;
-  max-height: 230px;
+  max-height: 210px;
   overflow: auto;
   white-space: pre-wrap;
   color: #c7f8ff;

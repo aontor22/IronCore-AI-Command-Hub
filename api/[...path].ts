@@ -1,5 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
 
+export const config = {
+  maxDuration: 30,
+};
+
 const GEMINI_KEY_CANDIDATES = [
   ['GEMINI_API_KEY', process.env.GEMINI_API_KEY],
   ['GOOGLE_API_KEY', process.env.GOOGLE_API_KEY],
@@ -10,6 +14,9 @@ const selectedKey = GEMINI_KEY_CANDIDATES.find(([, value]) => Boolean(value?.tri
 const GEMINI_API_KEY_SOURCE = selectedKey?.[0] || null;
 const HAS_GEMINI_KEY = Boolean(selectedKey?.[1]);
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
+const GEMINI_FAST_MODEL = process.env.GEMINI_FAST_MODEL || process.env.GEMINI_MODEL || 'gemini-3.1-pro-preview';
+const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS || 22000);
+const EXTENSION_TIMEOUT_MS = Number(process.env.EXTENSION_TIMEOUT_MS || 18000);
 const MAX_CONTEXT_CHARS = 12000;
 
 const SYSTEM_PROMPT = `You are IronCore, a safe futuristic personal AI operating assistant. Be concise, practical, and accurate. Help with productivity, research, code, writing, tasks, memory, and browser context. Do not claim to perform external actions unless a tool/backend confirms it. Sensitive actions must remain drafts or pending confirmation.`;
@@ -104,6 +111,13 @@ function truncate(input = '', max = MAX_CONTEXT_CHARS) {
   return input.length > max ? `${input.slice(0, max)}\n\n[Truncated ${input.length - max} characters]` : input;
 }
 
+function redactSensitive(input = '') {
+  return String(input)
+    .replace(/AIza[0-9A-Za-z\-_]{20,}/g, '[REDACTED_GOOGLE_API_KEY]')
+    .replace(/sk-[0-9A-Za-z\-_]{20,}/g, '[REDACTED_SECRET_KEY]')
+    .replace(/(api[_-]?key|token|secret|password)\s*[:=]\s*['\"]?[^\s'\"]+/gi, '$1=[REDACTED]');
+}
+
 function sanitizePriority(priority?: string): 'high' | 'medium' | 'low' {
   const value = priority?.toString().toLowerCase();
   return value === 'high' || value === 'low' ? value : 'medium';
@@ -146,18 +160,34 @@ async function getBody(req: any) {
   try { return JSON.parse(raw); } catch { return {}; }
 }
 
-async function callGemini(prompt: string) {
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)}s. Try a shorter page context or use a faster Gemini model.`)), timeoutMs);
+    }),
+  ]);
+}
+
+async function callGemini(prompt: string, options: { timeoutMs?: number; model?: string; compact?: boolean } = {}) {
   if (!selectedKey?.[1]) {
     throw new Error('Gemini API key is missing. Add GEMINI_API_KEY in Vercel Project Settings → Environment Variables, then redeploy.');
   }
 
+  const model = options.model || GEMINI_MODEL;
+  const safePrompt = options.compact ? truncate(redactSensitive(prompt), 4500) : truncate(redactSensitive(prompt), 12000);
   const ai = new GoogleGenAI({ apiKey: selectedKey[1] });
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    config: { systemInstruction: SYSTEM_PROMPT },
+  const run = ai.models.generateContent({
+    model,
+    contents: [{ role: 'user', parts: [{ text: safePrompt }] }],
+    config: {
+      systemInstruction: SYSTEM_PROMPT,
+      temperature: 0.35,
+      maxOutputTokens: options.compact ? 650 : 1100,
+    },
   });
 
+  const response: any = await withTimeout<any>(run as Promise<any>, options.timeoutMs || GEMINI_TIMEOUT_MS, `Gemini model ${model}`);
   return response.text || 'I processed the command, but the model returned an empty response.';
 }
 
@@ -166,18 +196,25 @@ async function runWebSearch(query: string) {
     return `Live web search is not configured. Add BRAVE_SEARCH_API_KEY only if you need live search. Requested query: ${query}`;
   }
 
-  const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`, {
-    headers: {
-      Accept: 'application/json',
-      'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY,
-    },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY,
+      },
+    });
 
-  if (!response.ok) return `Web search failed with status ${response.status}.`;
-  const data = await response.json() as any;
-  const results = data?.web?.results || [];
-  if (!results.length) return `No results found for: ${query}`;
-  return results.slice(0, 5).map((item: any, index: number) => `${index + 1}. ${item.title}\n${item.url}\n${item.description || ''}`).join('\n\n');
+    if (!response.ok) return `Web search failed with status ${response.status}.`;
+    const data = await response.json() as any;
+    const results = data?.web?.results || [];
+    if (!results.length) return `No results found for: ${query}`;
+    return results.slice(0, 5).map((item: any, index: number) => `${index + 1}. ${item.title}\n${item.url}\n${item.description || ''}`).join('\n\n');
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function summarizeText(name: string, content: string) {
@@ -189,7 +226,7 @@ async function handleChat(body: any) {
   const message = String(body.message || '').trim();
   if (!message) return { status: 400, payload: { error: 'Message is required' } };
 
-  store.chatHistory.push({ id: nextId(), userId: 1, role: 'user', content: message, createdAt: now() });
+  store.chatHistory.push({ id: nextId(), userId: 1, role: 'user', content: redactSensitive(message), createdAt: now() });
 
   const lower = message.toLowerCase();
   const toolNotes: string[] = [];
@@ -202,7 +239,7 @@ async function handleChat(body: any) {
       id: nextId(),
       userId: 1,
       title: createTaskMatch[1].replace(/tomorrow$/i, '').trim() || 'New task',
-      description: message,
+      description: redactSensitive(message),
       status: 'pending',
       priority,
       category: 'project',
@@ -215,7 +252,7 @@ async function handleChat(body: any) {
 
   const saveMemoryMatch = message.match(/save memory(?: that)?\s+(.+)/i);
   if (saveMemoryMatch?.[1]) {
-    const memory: Memory = { id: nextId(), userId: 1, content: saveMemoryMatch[1].trim(), source: 'assistant', createdAt: now() };
+    const memory: Memory = { id: nextId(), userId: 1, content: redactSensitive(saveMemoryMatch[1].trim()), source: 'assistant', createdAt: now() };
     store.memories.unshift(memory);
     toolNotes.push(`Memory saved: ${memory.content}`);
   }
@@ -225,7 +262,7 @@ async function handleChat(body: any) {
       id: nextId(),
       userId: 1,
       type: lower.includes('calendar') ? 'create_calendar_event' : 'draft_email',
-      payload: { request: message },
+      payload: { request: redactSensitive(message) },
       status: 'pending',
       createdAt: now(),
     };
@@ -264,14 +301,21 @@ export default async function handler(req: any, res: any) {
         status: 'running',
         dbOk: true,
         model: GEMINI_MODEL,
+        fastModel: GEMINI_FAST_MODEL,
         hasGeminiKey: HAS_GEMINI_KEY,
         keySource: GEMINI_API_KEY_SOURCE,
         hasBraveKey: Boolean(process.env.BRAVE_SEARCH_API_KEY),
         serverless: true,
         apiMode: 'vercel-serverless-memory',
         dbFile: 'serverless-memory-store',
+        timeoutMs: GEMINI_TIMEOUT_MS,
         timestamp: now(),
       });
+    }
+
+    if (method === 'GET' && routePath === '/gemini-test') {
+      const text = await callGemini('Reply with exactly: IronCore Gemini link is online.', { timeoutMs: 12000, compact: true, model: GEMINI_FAST_MODEL });
+      return sendJson(res, 200, { ok: true, text, model: GEMINI_FAST_MODEL });
     }
 
     if (routePath === '/chat' && method === 'POST') {
@@ -292,8 +336,8 @@ export default async function handler(req: any, res: any) {
       const task: Task = {
         id: nextId(),
         userId: 1,
-        title,
-        description: body.description || null,
+        title: redactSensitive(title),
+        description: body.description ? redactSensitive(String(body.description)) : null,
         status: 'pending',
         priority: sanitizePriority(body.priority),
         category: sanitizeCategory(body.category),
@@ -313,8 +357,8 @@ export default async function handler(req: any, res: any) {
         if (body.status !== undefined) task.status = body.status === 'completed' ? 'completed' : 'pending';
         if (body.priority !== undefined) task.priority = sanitizePriority(body.priority);
         if (body.category !== undefined) task.category = sanitizeCategory(body.category);
-        if (body.title !== undefined) task.title = String(body.title).trim() || task.title;
-        if (body.description !== undefined) task.description = body.description || null;
+        if (body.title !== undefined) task.title = redactSensitive(String(body.title).trim()) || task.title;
+        if (body.description !== undefined) task.description = body.description ? redactSensitive(String(body.description)) : null;
         if (body.dueDate !== undefined) task.dueDate = body.dueDate ? new Date(body.dueDate).toISOString() : null;
         return sendJson(res, 200, { success: true, task });
       }
@@ -331,7 +375,7 @@ export default async function handler(req: any, res: any) {
       return sendJson(res, 200, memories);
     }
     if (routePath === '/memories' && method === 'POST') {
-      const content = String(body.content || '').trim();
+      const content = redactSensitive(String(body.content || '').trim());
       if (!content) return sendJson(res, 400, { error: 'Content is required' });
       const memory: Memory = { id: nextId(), userId: 1, content, source: body.source || 'manual', createdAt: now() };
       store.memories.unshift(memory);
@@ -348,7 +392,7 @@ export default async function handler(req: any, res: any) {
     }
     if (routePath === '/upload' && method === 'POST') {
       if (!body.name || typeof body.content !== 'string') return sendJson(res, 400, { error: 'name and text content are required' });
-      const file: UploadedFile = { id: nextId(), userId: 1, name: String(body.name), mimeType: body.mimeType || 'text/plain', content: truncate(body.content, 200000), summary: null, createdAt: now() };
+      const file: UploadedFile = { id: nextId(), userId: 1, name: String(body.name), mimeType: body.mimeType || 'text/plain', content: truncate(redactSensitive(body.content), 200000), summary: null, createdAt: now() };
       store.files.unshift(file);
       return sendJson(res, 200, { success: true, file });
     }
@@ -373,7 +417,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (routePath === '/extension/context' && method === 'POST') {
-      const content = `Browser context saved\nURL: ${body.pageUrl || 'unknown'}\nTitle: ${body.pageTitle || 'unknown'}\nSelected text: ${body.selectedText || 'none'}\nPage snippet: ${truncate(body.pageText || '', 1000)}`;
+      const content = `Browser context saved\nURL: ${body.pageUrl || 'unknown'}\nTitle: ${body.pageTitle || 'unknown'}\nSelected text: ${redactSensitive(body.selectedText || 'none')}\nPage snippet: ${truncate(redactSensitive(body.pageText || ''), 800)}`;
       const memory: Memory = { id: nextId(), userId: 1, content, source: 'extension', createdAt: now() };
       store.memories.unshift(memory);
       return sendJson(res, 200, { success: true, memory });
@@ -382,9 +426,20 @@ export default async function handler(req: any, res: any) {
     if (routePath === '/extension/command' && method === 'POST') {
       const userCommand = String(body.userCommand || '').trim();
       if (!userCommand) return sendJson(res, 400, { error: 'userCommand is required' });
-      const prompt = `[Browser Context]\nURL: ${body.pageUrl || 'unknown'}\nTitle: ${body.pageTitle || 'unknown'}\nSelected Text: ${body.selectedText || 'none'}\nPage Text: ${truncate(body.pageText || '', 2500)}\n\nUser Command: ${userCommand}`;
-      const text = await callGemini(prompt);
-      return sendJson(res, 200, { success: true, text });
+      const safeSelected = truncate(redactSensitive(body.selectedText || ''), 900);
+      const safePage = truncate(redactSensitive(body.pageText || ''), 1600);
+      const prompt = `[Browser Context]\nURL: ${body.pageUrl || 'unknown'}\nTitle: ${body.pageTitle || 'unknown'}\nSelected Text: ${safeSelected || 'none'}\nPage Text: ${safePage}\n\nUser Command: ${redactSensitive(userCommand)}\n\nAnswer in a concise, useful format. If the page text is limited, say what you can infer.`;
+      try {
+        const text = await callGemini(prompt, { timeoutMs: EXTENSION_TIMEOUT_MS, compact: true, model: GEMINI_FAST_MODEL });
+        return sendJson(res, 200, { success: true, text, model: GEMINI_FAST_MODEL });
+      } catch (error: any) {
+        return sendJson(res, 200, {
+          success: true,
+          timeout: /timed out/i.test(error?.message || ''),
+          text: `IronCore received the browser context, but the AI response did not complete.\n\nReason: ${error?.message || 'Gemini request failed'}\n\nTry selecting a smaller text section, using a shorter command, or set GEMINI_FAST_MODEL to a faster Gemini model in Vercel.` ,
+          model: GEMINI_FAST_MODEL,
+        });
+      }
     }
 
     return sendJson(res, 404, { error: `API route not found: ${method} ${routePath}` });

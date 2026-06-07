@@ -13,6 +13,9 @@ const els = {
   refreshContext: document.getElementById('refreshContext'),
   copyResponse: document.getElementById('copyResponse'),
   openWebApp: document.getElementById('openWebApp'),
+  voiceInput: document.getElementById('voiceInput'),
+  speakResponse: document.getElementById('speakResponse'),
+  voiceStatus: document.getElementById('voiceStatus'),
 };
 
 let activeContext = null;
@@ -159,11 +162,60 @@ async function loadQueuedCommand() {
   }
 }
 
+
+function getRecognitionConstructor() {
+  return window.SpeechRecognition || window.webkitSpeechRecognition;
+}
+
+function setVoiceStatus(message, active = false) {
+  if (els.voiceStatus) els.voiceStatus.textContent = message;
+  if (els.voiceInput) els.voiceInput.classList.toggle('active', active);
+}
+
+function startVoiceInput() {
+  const SpeechRecognition = getRecognitionConstructor();
+  if (!SpeechRecognition) {
+    setResponse('Voice input is not available in this browser popup. Try Chrome or Edge, or use the floating page panel mic.');
+    return;
+  }
+  const recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.continuous = false;
+  recognition.onstart = () => setVoiceStatus('Listening...', true);
+  recognition.onend = () => setVoiceStatus('Voice ready', false);
+  recognition.onerror = (event) => setVoiceStatus(`Voice error: ${event.error || 'unknown'}`, false);
+  recognition.onresult = (event) => {
+    const transcript = event.results?.[0]?.[0]?.transcript || '';
+    if (transcript) {
+      els.commandInput.value = transcript;
+      els.commandInput.focus();
+    }
+  };
+  recognition.start();
+}
+
+function speakResponse() {
+  const text = els.responseOutput.textContent || '';
+  if (!text.trim()) return;
+  if (!('speechSynthesis' in window)) {
+    setResponse(`${text}\n\n[Speech output is not available in this browser.]`);
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text.replace(/[*_`>#]/g, '').slice(0, 900));
+  utterance.rate = 0.96;
+  utterance.pitch = 0.92;
+  window.speechSynthesis.speak(utterance);
+}
+
 els.saveSettings.addEventListener('click', saveSettings);
 els.refreshContext.addEventListener('click', refreshContext);
 els.sendCommand.addEventListener('click', () => sendCommand());
 els.saveContext.addEventListener('click', saveContext);
 els.openWebApp.addEventListener('click', () => sendRuntimeMessage({ type: 'OPEN_WEB_APP' }));
+els.voiceInput?.addEventListener('click', startVoiceInput);
+els.speakResponse?.addEventListener('click', speakResponse);
 els.copyResponse.addEventListener('click', async () => {
   await navigator.clipboard.writeText(els.responseOutput.textContent || '');
   setResponse(`${els.responseOutput.textContent}\n\n[Copied to clipboard]`);
