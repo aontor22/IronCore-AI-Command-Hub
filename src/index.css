@@ -264,3 +264,19 @@ option {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+
+/* Responsive polish for laptop screens and deployed previews */
+@media (max-width: 1535px) {
+  .hud-panel { border-radius: 1.15rem; }
+}
+
+@media (max-height: 820px) and (min-width: 1024px) {
+  .sidebar-footer .hud-panel { display: none; }
+}
+
+@media (max-width: 640px) {
+  .hud-icon-button { height: 38px; width: 38px; border-radius: 12px; }
+  .core-orb { transform: scale(0.96); }
+  .hud-panel { backdrop-filter: blur(16px); }
+}

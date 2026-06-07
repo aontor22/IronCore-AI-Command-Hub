@@ -2,14 +2,28 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import * as schema from './schema';
 import fs from 'fs';
+import path from 'path';
 
-const DB_FILE = process.env.SQLITE_DB_PATH || 'sqlite.db';
+const requestedDbPath = process.env.SQLITE_DB_PATH?.trim();
+const isVercel = Boolean(process.env.VERCEL);
+
+// Vercel/serverless filesystems are ephemeral. Use /tmp there so the API can boot,
+// but use a real hosted database such as Supabase/Neon/Turso for persistent production data.
+export const DB_FILE = isVercel
+  ? requestedDbPath?.startsWith('/tmp/') ? requestedDbPath : '/tmp/ironcore.sqlite'
+  : requestedDbPath || 'sqlite.db';
 
 function removeIfExists(filePath: string) {
   if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 }
 
+function ensureDbDirectory() {
+  const dir = path.dirname(DB_FILE);
+  if (dir && dir !== '.') fs.mkdirSync(dir, { recursive: true });
+}
+
 function createConnection() {
+  ensureDbDirectory();
   const sqlite = new Database(DB_FILE);
   sqlite.pragma('journal_mode = WAL');
   sqlite.pragma('foreign_keys = ON');
@@ -24,8 +38,8 @@ function getDatabaseConnection() {
     const isCorrupt = err.message?.includes('malformed') || err.message?.includes('corrupt') || err.code === 'SQLITE_CORRUPT';
     if (!isCorrupt) throw err;
 
-    console.error(`[DATABASE] Local SQLite file is corrupted: ${err.message}`);
-    console.warn('[DATABASE] Recreating a clean local development database.');
+    console.error(`[DATABASE] SQLite file is corrupted: ${err.message}`);
+    console.warn('[DATABASE] Recreating a clean development/serverless database.');
     try {
       removeIfExists(DB_FILE);
       removeIfExists(`${DB_FILE}-wal`);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { db, sqlite } from './db';
+import { DB_FILE, db, sqlite } from './db';
 import { tasks, memories, chatHistory, users, files, pendingActions } from './db/schema';
-import { generateChatResponse, generatePlainText, GEMINI_MODEL } from './ai';
+import { generateChatResponse, generatePlainText, GEMINI_API_KEY_SOURCE, GEMINI_MODEL, HAS_GEMINI_KEY } from './ai';
 import { and, desc, eq, like } from 'drizzle-orm';
 import os from 'os';
 
@@ -172,8 +172,12 @@ routes.get('/health', (_req, res) => {
     status: 'running',
     dbOk,
     model: GEMINI_MODEL,
-    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    hasGeminiKey: HAS_GEMINI_KEY,
+    keySource: GEMINI_API_KEY_SOURCE,
     hasBraveKey: Boolean(process.env.BRAVE_SEARCH_API_KEY),
+    serverless: Boolean(process.env.VERCEL),
+    apiMode: process.env.VERCEL ? 'vercel-function' : 'local-express',
+    dbFile: DB_FILE,
     timestamp: new Date().toISOString(),
   });
 });

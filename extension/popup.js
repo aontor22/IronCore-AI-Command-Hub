@@ -59,12 +59,12 @@ function setStatus(label, message, isOnline = false) {
 async function loadSettings() {
   const response = await sendRuntimeMessage({ type: 'GET_SETTINGS' });
   if (response?.ok) {
-    els.backendUrl.value = response.backendUrl || 'http://localhost:3000';
+    els.backendUrl.value = response.backendUrl || 'https://iron-core-ai-command-hub.vercel.app';
   }
 }
 
 async function saveSettings() {
-  const backendUrl = els.backendUrl.value.trim() || 'http://localhost:3000';
+  const backendUrl = els.backendUrl.value.trim() || 'https://iron-core-ai-command-hub.vercel.app';
   const response = await sendRuntimeMessage({ type: 'SAVE_SETTINGS', backendUrl });
   setResponse(response?.ok ? `Backend URL saved: ${response.backendUrl}` : `Could not save settings: ${response?.error || 'Unknown error'}`);
   await checkHealth();
@@ -73,7 +73,7 @@ async function saveSettings() {
 async function checkHealth() {
   const response = await sendRuntimeMessage({ type: 'HEALTH_CHECK' });
   if (!response?.ok) {
-    setStatus('OFF', `Backend not connected. Start the web app with npm run dev. ${response?.error || ''}`, false);
+    setStatus('OFF', `Backend not connected. Check the backend URL, Vercel deployment, and /api/health. ${response?.error || ''}`, false);
     return;
   }
 
@@ -137,7 +137,7 @@ async function sendCommand(commandOverride) {
   });
 
   if (!response?.ok) {
-    setResponse(`Connection problem: ${response?.error || 'Unknown error'}\n\nMake sure the IronCore web app is running at http://localhost:3000`);
+    setResponse(`Connection problem: ${response?.error || 'Unknown error'}\n\nMake sure the Backend URL in extension settings points to your running local app or Vercel deployment`);
     return;
   }
 

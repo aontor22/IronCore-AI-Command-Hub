@@ -11,10 +11,11 @@
     "contextMenus"
   ],
   "host_permissions": [
-    "http://localhost:3000/*",
+    "http://*/*",
     "http://127.0.0.1:3000/*",
+    "http://localhost:3000/*",
     "https://*/*",
-    "http://*/*"
+    "https://iron-core-ai-command-hub.vercel.app/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -31,9 +32,16 @@
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],

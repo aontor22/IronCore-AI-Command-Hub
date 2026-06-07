@@ -11,7 +11,8 @@
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@google/genai": "^2.8.0",
@@ -45,5 +46,8 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.3"
   },
-  "description": "A futuristic AI operating assistant with a cinematic HUD interface, Gemini-powered chat, memory, tasks, file tools, voice controls, and extension-ready APIs."
+  "description": "A futuristic AI operating assistant with a cinematic HUD interface, Gemini-powered chat, memory, tasks, file tools, voice controls, and extension-ready APIs.",
+  "engines": {
+    "node": "22.x"
+  }
 }

@@ -1,4 +1,4 @@
-const DEFAULT_BACKEND_URL = 'http://localhost:3000';
+const DEFAULT_BACKEND_URL = 'https://iron-core-ai-command-hub.vercel.app';
 
 async function getBackendUrl() {
   const { backendUrl } = await chrome.storage.sync.get({ backendUrl: DEFAULT_BACKEND_URL });

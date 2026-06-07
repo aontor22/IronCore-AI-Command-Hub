@@ -286,3 +286,26 @@ http://localhost:3000
 - API keys remain in the backend `.env` file only.
 - The extension cannot run content scripts on Chrome internal pages such as `chrome://extensions`.
 - If the popup says the backend is offline, start the web app with `npm run dev` and check `http://localhost:3000/api/health`.
+
+
+## Vercel API Fix Notes
+
+This project includes a Vercel API catch-all function at `api/[...path].ts`. It mounts the same Express API routes used locally, so `/api/health`, `/api/chat`, `/api/tasks`, `/api/memories`, `/api/files`, and `/api/extension/command` can work after deployment.
+
+Add these in Vercel Project Settings → Environment Variables:
+
+```env
+GEMINI_API_KEY=your_real_google_ai_studio_key
+GEMINI_MODEL=gemini-3.1-pro-preview
+BRAVE_SEARCH_API_KEY=
+```
+
+Do not add a real key in `.env.example`. `.env.example` is only a public template.
+
+Important: SQLite is only temporary on Vercel serverless functions. The app will boot with `/tmp/ironcore.sqlite`, but memory/tasks/files may reset between function instances. Use Supabase, Neon, Turso, or another hosted database for production persistence.
+
+For the Chrome extension, open the popup and set Backend URL to your deployed URL, for example:
+
+```txt
+https://iron-core-ai-command-hub.vercel.app
+```

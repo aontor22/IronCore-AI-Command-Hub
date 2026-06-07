@@ -70,6 +70,11 @@ type Health = {
   hasGeminiKey: boolean;
   hasBraveKey: boolean;
   timestamp: string;
+  keySource?: string | null;
+  apiMode?: string;
+  dbFile?: string;
+  serverless?: boolean;
+  error?: string;
 };
 
 type UploadedFile = {
@@ -161,8 +166,8 @@ function RadialGauge({ label, value, size = 76 }: { label: string; value: number
 
 function Sidebar({ active, setActive, health, pendingTasks }: { active: Tab; setActive: (tab: Tab) => void; health: Health | null; pendingTasks: number }) {
   return (
-    <aside className="hidden h-screen w-[268px] shrink-0 border-r border-cyan-300/12 bg-[#030b16]/88 p-4 shadow-[inset_-1px_0_0_rgba(34,211,238,.08)] backdrop-blur-2xl lg:flex lg:flex-col">
-      <div className="mb-7 flex items-center gap-3 rounded-2xl border border-cyan-300/16 bg-cyan-300/[0.04] p-3">
+    <aside className="hidden h-dvh max-h-dvh w-[252px] shrink-0 overflow-y-auto border-r border-cyan-300/12 bg-[#030b16]/88 p-3 shadow-[inset_-1px_0_0_rgba(34,211,238,.08)] backdrop-blur-2xl lg:sticky lg:top-0 lg:flex lg:flex-col xl:w-[268px] xl:p-4">
+      <div className="mb-4 flex items-center gap-3 rounded-2xl border border-cyan-300/16 bg-cyan-300/[0.04] p-3 xl:mb-7">
         <div className="hex-badge flex h-12 w-12 items-center justify-center text-cyan-100">
           <ShieldCheck size={25} />
         </div>
@@ -181,7 +186,7 @@ function Sidebar({ active, setActive, health, pendingTasks }: { active: Tab; set
               key={item.id}
               onClick={() => setActive(item.id)}
               className={cx(
-                'group flex items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition duration-200',
+                'group flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm transition duration-200 xl:py-3',
                 selected
                   ? 'border-cyan-300/40 bg-cyan-300/12 text-cyan-50 shadow-[0_0_26px_rgba(34,211,238,.22)]'
                   : 'border-transparent text-cyan-100/62 hover:border-cyan-300/18 hover:bg-cyan-300/[0.05] hover:text-cyan-50'
@@ -197,7 +202,7 @@ function Sidebar({ active, setActive, health, pendingTasks }: { active: Tab; set
         })}
       </nav>
 
-      <div className="mt-auto grid gap-4">
+      <div className="sidebar-footer mt-4 grid gap-3 xl:mt-auto xl:gap-4">
         <HudPanel title="Core Status">
           <div className="mx-auto mb-4 flex justify-center">
             <div className="status-orb flex h-36 w-36 items-center justify-center rounded-full text-center">
@@ -230,12 +235,12 @@ function TopBar({ health, refreshAll }: { health: Health | null; refreshAll: () 
   }, []);
 
   return (
-    <header className="sticky top-0 z-20 mb-5 border-b border-cyan-300/10 bg-[#020812]/72 px-4 py-3 backdrop-blur-xl lg:px-6">
-      <div className="flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-20 mb-4 border-b border-cyan-300/10 bg-[#020812]/84 px-3 py-2.5 backdrop-blur-xl sm:px-4 lg:px-6">
+      <div className="flex min-h-[46px] flex-wrap items-center justify-between gap-2 sm:gap-4">
         <div className="hidden items-center gap-3 rounded-full border border-cyan-300/12 bg-cyan-300/[0.04] px-4 py-2 font-mono text-[11px] uppercase tracking-[0.2em] text-cyan-200 md:flex">
           <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300 shadow-[0_0_18px_rgba(34,211,238,.9)]" /> Core Online
         </div>
-        <div className="mx-auto hidden min-w-[320px] items-center justify-center rounded-full border border-cyan-300/12 bg-cyan-950/20 px-8 py-2 font-mono text-[11px] uppercase tracking-[0.28em] text-cyan-200/80 xl:flex">
+        <div className="mx-auto hidden min-w-[280px] items-center justify-center rounded-full border border-cyan-300/12 bg-cyan-950/20 px-6 py-2 font-mono text-[10px] uppercase tracking-[0.24em] text-cyan-200/80 2xl:flex">
           Secure <span className="mx-4 text-cyan-500/60">•</span> Private <span className="mx-4 text-cyan-500/60">•</span> Adaptive
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -244,7 +249,7 @@ function TopBar({ health, refreshAll }: { health: Health | null; refreshAll: () 
             <p className="text-lg font-bold tracking-wider text-cyan-100">{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
             <p className="text-[10px] uppercase tracking-[0.18em] text-cyan-300/60">{now.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
-          <span className={cx('rounded-full border px-3 py-2 font-mono text-[10px] uppercase tracking-[0.18em]', health?.hasGeminiKey ? 'border-emerald-300/20 bg-emerald-300/10 text-emerald-200' : 'border-rose-300/20 bg-rose-300/10 text-rose-200')}>{health?.hasGeminiKey ? 'Gemini' : 'No Key'}</span>
+          <span className={cx('rounded-full border px-2.5 py-2 font-mono text-[10px] uppercase tracking-[0.14em]', health?.hasGeminiKey ? 'border-emerald-300/20 bg-emerald-300/10 text-emerald-200' : 'border-rose-300/20 bg-rose-300/10 text-rose-200')}>{health?.hasGeminiKey ? 'Gemini' : 'No Key'}</span>
           <button className="hud-icon-button"><Bell size={16} /></button>
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-cyan-300/18 bg-cyan-300/10 font-mono text-xs font-bold text-cyan-100">OR</div>
         </div>
@@ -255,11 +260,11 @@ function TopBar({ health, refreshAll }: { health: Health | null; refreshAll: () 
 
 function CoreOrb({ active, pendingTasks, memoryCount, fileCount, onClick }: { active: Tab; pendingTasks: number; memoryCount: number; fileCount: number; onClick: () => void }) {
   return (
-    <div className="relative mx-auto flex min-h-[440px] items-center justify-center py-4">
-      <div className="absolute left-2 top-1/2 hidden -translate-y-1/2 lg:block"><RadialGauge label="Focus" value={74} size={86} /></div>
-      <div className="absolute right-2 top-1/2 hidden -translate-y-1/2 lg:block"><RadialGauge label="Confidence" value={92} size={86} /></div>
+    <div className="relative mx-auto flex min-h-[330px] items-center justify-center py-2 sm:min-h-[380px] 2xl:min-h-[440px] 2xl:py-4">
+      <div className="absolute left-2 top-1/2 hidden -translate-y-1/2 2xl:block"><RadialGauge label="Focus" value={74} size={86} /></div>
+      <div className="absolute right-2 top-1/2 hidden -translate-y-1/2 2xl:block"><RadialGauge label="Confidence" value={92} size={86} /></div>
 
-      <button onClick={onClick} className="core-orb group relative flex h-[360px] w-[360px] items-center justify-center rounded-full md:h-[440px] md:w-[440px]" title="Cycle dashboard mode">
+      <button onClick={onClick} className="core-orb group relative flex h-[292px] w-[292px] items-center justify-center rounded-full sm:h-[350px] sm:w-[350px] 2xl:h-[440px] 2xl:w-[440px]" title="Cycle dashboard mode">
         <span className="core-ring ring-one" />
         <span className="core-ring ring-two" />
         <span className="core-ring ring-three" />
@@ -268,7 +273,7 @@ function CoreOrb({ active, pendingTasks, memoryCount, fileCount, onClick }: { ac
         <span className="absolute h-[44%] w-[44%] rounded-full border border-cyan-200/50 bg-[#02101f]/84 shadow-[0_0_60px_rgba(34,211,238,.34),inset_0_0_50px_rgba(34,211,238,.08)]" />
         <span className="relative z-10 text-center">
           <span className="block font-mono text-[11px] uppercase tracking-[0.26em] text-cyan-300/90">Assistant Core</span>
-          <span className="mt-3 block text-4xl font-semibold tracking-[0.08em] text-cyan-50 md:text-5xl">IRONCORE</span>
+          <span className="mt-3 block text-3xl font-semibold tracking-[0.08em] text-cyan-50 sm:text-4xl 2xl:text-5xl">IRONCORE</span>
           <span className="mx-auto mt-4 flex h-8 w-40 items-end justify-center gap-1 opacity-90">
             {Array.from({ length: 26 }).map((_, idx) => <span key={idx} className="wave-bar" style={{ animationDelay: `${idx * 42}ms`, height: `${9 + ((idx * 13) % 22)}px` }} />)}
           </span>
@@ -354,7 +359,7 @@ function MemorySnapshots({ memories }: { memories: Memory[] }) {
 function SystemStatusPanel({ health }: { health: Health | null }) {
   return (
     <HudPanel title="System Status">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <RadialGauge label="CPU" value={24} size={68} />
         <RadialGauge label="RAM" value={53} size={68} />
         <RadialGauge label="Store" value={68} size={68} />
@@ -436,7 +441,7 @@ function VoiceAssistantCard({ isListening, startVoice }: { isListening: boolean;
 
 function FilesBrowserContext({ files }: { files: UploadedFile[] }) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 lg:grid-cols-3">
       <HudPanel title="Files" count={files.length}>
         <div className="grid gap-2">
           {files.slice(0, 4).map((file) => <div key={file.id} className="flex items-center justify-between gap-2 text-sm"><span className="truncate text-cyan-50/75">{file.name}</span><span className="font-mono text-[10px] text-cyan-300/55">TXT</span></div>)}
@@ -473,7 +478,7 @@ function ChatDock({ onSubmit, isLoading, onVoice, onSpeak, isListening }: { onSu
   };
 
   return (
-    <div className="hud-panel sticky bottom-4 z-30 mx-auto mt-4 flex max-w-5xl items-center gap-3 rounded-[1.6rem] p-3 shadow-[0_0_45px_rgba(34,211,238,.24)]">
+    <div className="hud-panel sticky bottom-3 z-30 mx-auto mt-4 flex max-w-5xl flex-col items-stretch gap-3 rounded-[1.6rem] p-2.5 shadow-[0_0_45px_rgba(34,211,238,.24)] md:flex-row md:items-center md:p-3">
       <div className="hidden items-center gap-3 pl-2 pr-3 md:flex">
         <div className="hex-badge flex h-11 w-11 items-center justify-center text-cyan-50"><Bot size={22} /></div>
         <div>
@@ -667,9 +672,9 @@ function SettingsOperations({ health, refresh }: { health: Health | null; refres
   return (
     <Workspace title="System Settings" subtitle="Safe local status, model configuration and integration checks." action={<button onClick={refresh} className="rounded-2xl border border-cyan-300/16 bg-cyan-300/[0.06] px-4 py-2 text-sm text-cyan-100"><RefreshCw size={15} className="mr-2 inline" />Refresh</button>}>
       <div className="grid gap-4 md:grid-cols-2">
-        <HudPanel title="Gemini API"><p className={cx('text-2xl font-semibold', health?.hasGeminiKey ? 'text-emerald-300' : 'text-rose-300')}>{health?.hasGeminiKey ? 'Configured' : 'Missing API key'}</p><p className="mt-2 text-sm text-cyan-100/55">Model: {health?.model || 'unknown'}</p></HudPanel>
-        <HudPanel title="Web Search"><p className={cx('text-2xl font-semibold', health?.hasBraveKey ? 'text-emerald-300' : 'text-amber-300')}>{health?.hasBraveKey ? 'Brave configured' : 'Optional key missing'}</p><p className="mt-2 text-sm text-cyan-100/55">Add BRAVE_SEARCH_API_KEY for live search.</p></HudPanel>
-        <HudPanel title="Safety Model" className="md:col-span-2"><div className="grid gap-2 text-sm text-cyan-100/62 md:grid-cols-2"><p>• Email and calendar actions require confirmation</p><p>• API keys stay server-side</p><p>• Extension calls use backend /api only</p><p>• Local database can be reset safely in dev</p></div></HudPanel>
+        <HudPanel title="Gemini API"><p className={cx('text-2xl font-semibold', health?.hasGeminiKey ? 'text-emerald-300' : 'text-rose-300')}>{health?.hasGeminiKey ? 'Configured' : 'Missing API key'}</p><p className="mt-2 text-sm text-cyan-100/55">Model: {health?.model || 'unknown'}</p><p className="mt-1 text-xs text-cyan-300/45">Source: {health?.keySource || 'not detected'}</p></HudPanel>
+        <HudPanel title="Web Search"><p className={cx('text-2xl font-semibold', health?.hasBraveKey ? 'text-emerald-300' : 'text-amber-300')}>{health?.hasBraveKey ? 'Brave configured' : 'Optional key missing'}</p><p className="mt-2 text-sm text-cyan-100/55">Add BRAVE_SEARCH_API_KEY only for live web search. Chrome/Edge/Firefox are browsers, not search APIs.</p></HudPanel>
+        <HudPanel title="Safety Model" className="md:col-span-2"><div className="grid gap-2 text-sm text-cyan-100/62 md:grid-cols-2"><p>• Email and calendar actions require confirmation</p><p>• API keys stay server-side</p><p>• Extension calls use backend /api only</p><p>• Vercel SQLite data is temporary; use Supabase/Neon/Turso for production persistence</p></div></HudPanel>{health?.error && <HudPanel title="API Diagnostic" className="md:col-span-2"><p className="text-sm leading-relaxed text-rose-200">{health.error}</p><p className="mt-2 text-sm text-cyan-100/55">This usually means Vercel is serving only the frontend and the /api function is missing or failed to boot.</p></HudPanel>}
       </div>
     </Workspace>
   );
@@ -706,7 +711,7 @@ function ChatWorkspace({ messages, pendingActions, onSubmit, confirmAction, canc
 
 function Workspace({ title, subtitle, children, action }: { title: string; subtitle: string; children: ReactNode; action?: ReactNode }) {
   return (
-    <section className="mx-auto max-w-6xl rounded-[2rem] border border-cyan-300/12 bg-[#061423]/78 p-5 shadow-[0_0_55px_rgba(34,211,238,.08),inset_0_1px_0_rgba(255,255,255,.05)] backdrop-blur-2xl md:p-6">
+    <section className="mx-auto max-w-6xl rounded-[1.6rem] border border-cyan-300/12 bg-[#061423]/78 p-4 shadow-[0_0_55px_rgba(34,211,238,.08),inset_0_1px_0_rgba(255,255,255,.05)] backdrop-blur-2xl sm:rounded-[2rem] md:p-6">
       <div className="mb-6 flex flex-col gap-3 border-b border-cyan-300/10 pb-5 md:flex-row md:items-center md:justify-between">
         <div><h2 className="font-mono text-2xl font-bold uppercase tracking-[0.12em] text-cyan-50">{title}</h2><p className="mt-2 text-sm text-cyan-100/55">{subtitle}</p></div>
         {action}
@@ -729,8 +734,21 @@ export function Dashboard(props: DashboardProps) {
   const latestAssistantText = useMemo(() => [...messages].reverse().find((message) => message.role === 'assistant')?.content || '', [messages]);
 
   const fetchHealth = async () => {
-    const data = await apiFetch<Health>('/api/health');
-    setHealth(data);
+    try {
+      const data = await apiFetch<Health>('/api/health');
+      setHealth(data);
+    } catch (error: any) {
+      setHealth({
+        ok: false,
+        status: 'api_unreachable',
+        dbOk: false,
+        model: 'API route unreachable',
+        hasGeminiKey: false,
+        hasBraveKey: false,
+        timestamp: new Date().toISOString(),
+        error: error?.message || 'Could not reach /api/health',
+      });
+    }
   };
 
   const fetchFiles = async () => {
@@ -739,7 +757,7 @@ export function Dashboard(props: DashboardProps) {
   };
 
   useEffect(() => {
-    fetchHealth().catch(console.error);
+    fetchHealth();
     fetchFiles().catch(console.error);
   }, []);
 
@@ -794,7 +812,7 @@ export function Dashboard(props: DashboardProps) {
 
       <div className="relative z-10 flex min-h-screen">
         <Sidebar active={active} setActive={setActive} health={health} pendingTasks={pendingTasks} />
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 overflow-x-hidden">
           <TopBar health={health} refreshAll={props.refreshAll} />
           <div className="px-4 pb-8 lg:px-6">
             <div className="mb-4 flex gap-2 overflow-x-auto pb-2 lg:hidden">
@@ -805,7 +823,7 @@ export function Dashboard(props: DashboardProps) {
             </div>
 
             {active === 'dashboard' ? (
-              <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[minmax(250px,300px)_minmax(420px,1fr)_minmax(330px,390px)]">
+              <div className="mx-auto grid max-w-[1560px] gap-4 xl:grid-cols-[minmax(250px,310px)_minmax(520px,1fr)] 2xl:grid-cols-[minmax(250px,300px)_minmax(420px,1fr)_minmax(330px,390px)]">
                 <div className="grid content-start gap-4">
                   <ActiveTasksPanel tasks={props.tasks} onNewTask={() => setActive('tasks')} toggleTaskStatus={props.toggleTaskStatus} />
                   <ReminderPanel tasks={props.tasks} />
@@ -817,7 +835,7 @@ export function Dashboard(props: DashboardProps) {
                   <FilesBrowserContext files={files} />
                 </div>
 
-                <div className="grid content-start gap-4">
+                <div className="grid content-start gap-4 xl:col-span-2 2xl:col-span-1">
                   <SystemStatusPanel health={health} />
                   <RecentActivity messages={messages} tasks={props.tasks} files={files} />
                   <QuickActions onPrompt={sendCommand} />

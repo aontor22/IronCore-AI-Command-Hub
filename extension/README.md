@@ -2,7 +2,7 @@
 
 This folder contains the Chrome extension companion for the IronCore AI Command Hub web app.
 
-The extension does not contain any Gemini API key. It sends selected text, page title, URL, and readable page text to your local IronCore web app backend at:
+The extension does not contain any Gemini API key. It sends selected text, page title, URL, and readable page text to your IronCore backend at your configured Backend URL. For local development, use:
 
 ```txt
 http://localhost:3000/api/extension/command
@@ -47,7 +47,7 @@ http://localhost:3000
 
 ## Notes
 
-- The web app must be running for AI features to work.
+- The web app/API must be running for AI features to work. If deployed on Vercel, set Backend URL to your deployed domain, for example `https://iron-core-ai-command-hub.vercel.app`.
 - The extension reads page text only when you ask it to use page context.
 - It cannot run on Chrome internal pages like `chrome://extensions`.
 - API keys stay server-side in the web app.

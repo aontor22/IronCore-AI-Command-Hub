@@ -125,7 +125,7 @@ async function sendPanelCommand() {
   const response = await sendRuntimeMessage({ type: 'EXTENSION_COMMAND', payload });
 
   if (!response?.ok) {
-    responseBox.textContent = `Connection problem: ${response?.error || 'Unknown error'}\n\nMake sure the IronCore web app is running at http://localhost:3000`;
+    responseBox.textContent = `Connection problem: ${response?.error || 'Unknown error'}\n\nMake sure the Backend URL in the extension popup points to your running local app or Vercel deployment`;
     return;
   }
 
