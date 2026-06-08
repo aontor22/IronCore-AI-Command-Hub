@@ -654,8 +654,8 @@ function ExtensionOperations() {
   return (
     <Workspace title="Extension Bridge" subtitle="Manifest V3 ready endpoints for browser context and commands.">
       <div className="grid gap-4 md:grid-cols-2">
-        <HudPanel title="Context Endpoint"><p className="text-sm text-cyan-100/62">Collect page title, URL, selected text and page snippet.</p><pre className="mt-4 overflow-auto rounded-2xl bg-slate-950/60 p-4 text-xs text-cyan-100">POST /api/extension/context</pre></HudPanel>
-        <HudPanel title="Command Endpoint"><p className="text-sm text-cyan-100/62">Ask IronCore questions about the active browser page.</p><pre className="mt-4 overflow-auto rounded-2xl bg-slate-950/60 p-4 text-xs text-cyan-100">POST /api/extension/command</pre></HudPanel>
+        <HudPanel title="Context Endpoint"><p className="text-sm text-cyan-100/62">Collect page title, URL, selected text and page snippet.</p><pre className="mt-4 overflow-auto rounded-2xl bg-slate-950/60 p-4 text-xs text-cyan-100">POST /api/extension-context</pre></HudPanel>
+        <HudPanel title="Command Endpoint"><p className="text-sm text-cyan-100/62">Ask IronCore questions about the active browser page.</p><pre className="mt-4 overflow-auto rounded-2xl bg-slate-950/60 p-4 text-xs text-cyan-100">POST /api/extension-command</pre></HudPanel>
       </div>
       <pre className="mt-5 overflow-auto rounded-3xl border border-cyan-300/12 bg-slate-950/55 p-5 text-xs leading-relaxed text-cyan-100/75">{`{
   "userCommand": "Summarize this page",

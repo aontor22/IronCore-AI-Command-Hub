@@ -26,7 +26,7 @@ export default async function handler(req: any, res: any) {
     serverless: true,
     apiMode: 'vercel-standalone-rest-api',
     dbFile: 'serverless-memory-store',
-    routes: ['/api/health', '/api/gemini-test', '/api/extension-command', '/api/extension-context'],
+    routes: ['/api/health', '/api/gemini-test', '/api/chat', '/api/chat-history', '/api/tasks', '/api/memories', '/api/files', '/api/actions', '/api/extension-command', '/api/extension-context'],
     timestamp: new Date().toISOString(),
   });
 }
